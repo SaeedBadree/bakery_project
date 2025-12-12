@@ -6,7 +6,7 @@ from app.models.recipe import Ingredient, Recipe, RecipeLine, Batch, BatchConsum
 from app.models.purchasing import Vendor, PurchaseOrder, POLine, ReceivedLine
 from app.models.ar import Customer, AREntry
 from app.models.shift import Shift, CashEvent
-from app.models.settings import Setting
+from app.models.settings import SystemSettings
 
 __all__ = [
     "User", "Role",
@@ -17,6 +17,6 @@ __all__ = [
     "Vendor", "PurchaseOrder", "POLine", "ReceivedLine",
     "Customer", "AREntry",
     "Shift", "CashEvent",
-    "Setting",
+    "SystemSettings",
 ]
 

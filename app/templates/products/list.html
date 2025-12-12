@@ -27,6 +27,7 @@
                 <th>Name</th>
                 <th>Category</th>
                 <th>Price</th>
+                <th>Tax Rate</th>
                 <th>On Hand</th>
                 <th>Actions</th>
             </tr>
@@ -38,6 +39,15 @@
                 <td>{{ product.name }}</td>
                 <td>{{ product.category.name }}</td>
                 <td>${{ "%.2f"|format(product.price) }}</td>
+                <td>
+                    {% if not product.taxable %}
+                        <span style="color: #6c757d;">N/A</span>
+                    {% elif product.custom_tax_rate %}
+                        <span style="color: #ff69b4; font-weight: 600;">{{ (product.custom_tax_rate * 100)|float }}%</span>
+                    {% else %}
+                        <span style="color: #6c757d;">Default</span>
+                    {% endif %}
+                </td>
                 <td>{{ product.on_hand }}</td>
                 <td>
                     <a href="/products/{{ product.id }}/edit" class="btn btn-secondary btn-sm">Edit</a>

@@ -24,6 +24,7 @@ class Product(Base):
     price = Column(Numeric(10, 2), nullable=False)
     cost = Column(Numeric(10, 2), default=0)
     taxable = Column(Boolean, default=True)
+    custom_tax_rate = Column(Numeric(5, 4), nullable=True)  # Custom tax rate for this product (e.g., 0.15 for 15%)
     is_active = Column(Boolean, default=True)
     on_hand = Column(Numeric(10, 2), default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

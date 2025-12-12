@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.routers.auth import require_auth
 from app.models.product import Product, Category
-from app.models.sale import TenderType
+from app.models.sale import TenderType, Sale, SaleLine
 # Shift system removed for simplicity
 from app.models.ar import Customer
 from app.services.pos import create_sale, get_sale, void_sale, create_return
@@ -24,8 +24,23 @@ async def checkout_page(
     db: Session = Depends(get_db)
 ):
     """POS checkout page"""
+    from app.routers.settings import get_setting
+    
+    # Get default tax rate from settings
+    default_tax_rate_str = get_setting(db, "tax_rate", "0.10")
+    default_tax_rate = float(default_tax_rate_str)
+    
     categories = db.query(Category).order_by(Category.sort_order, Category.name).all()
     products = db.query(Product).filter(Product.is_active == True).order_by(Product.name).all()
+    
+    # Calculate price with tax for each product
+    for product in products:
+        if product.taxable:
+            # Use custom tax rate if set, otherwise use default
+            tax_rate = float(product.custom_tax_rate) if product.custom_tax_rate else default_tax_rate
+            product.price_with_tax = float(product.price) * (1 + tax_rate)
+        else:
+            product.price_with_tax = float(product.price)
     
     return templates.TemplateResponse(
         "pos/checkout.html",
@@ -224,20 +239,41 @@ async def complete_sale(
     db: Session = Depends(get_db)
 ):
     """Complete a sale"""
-    # Try to get cart from cookies
-    cart = request.cookies.get("cart", "[]")
-    # Also try to get from form data if sent
+    # Try to get cart from form data first (more reliable)
     form_data = await request.form()
+    cart = None
     cart_from_form = form_data.get("cart_data", None)
+    
     if cart_from_form:
         cart = cart_from_form
+    else:
+        # Fallback to cookies
+        cart = request.cookies.get("cart", "[]")
     
-    try:
-        cart_items = json.loads(cart)
-    except:
-        cart_items = []
+    # Parse cart JSON - handle various formats
+    cart_items = []
+    if cart:
+        try:
+            # Try parsing directly
+            cart_items = json.loads(cart)
+        except json.JSONDecodeError:
+            # Try URL decoding first if it fails
+            try:
+                import urllib.parse
+                decoded_cart = urllib.parse.unquote(cart)
+                cart_items = json.loads(decoded_cart)
+            except:
+                # Last resort - try to extract JSON from string
+                try:
+                    # Find JSON array in string
+                    import re
+                    json_match = re.search(r'\[.*\]', cart)
+                    if json_match:
+                        cart_items = json.loads(json_match.group())
+                except:
+                    cart_items = []
     
-    if not cart_items:
+    if not cart_items or len(cart_items) == 0:
         return templates.TemplateResponse(
             "pos/checkout.html",
             {
@@ -303,11 +339,33 @@ async def receipt(
     user_data: dict = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
-    """Print receipt"""
-    sale = get_sale(db, sale_id)
+    """Display printable invoice/receipt after sale completion"""
+    from sqlalchemy.orm import joinedload
+    
+    # Load sale with all relationships for invoice display
+    sale = db.query(Sale).options(
+        joinedload(Sale.customer),
+        joinedload(Sale.cashier),
+        joinedload(Sale.sale_lines).joinedload(SaleLine.product)
+    ).filter(Sale.id == sale_id).first()
+    
+    if not sale:
+        return templates.TemplateResponse(
+            "pos/checkout.html",
+            {
+                "request": request,
+                "user": user_data["user"],
+                "error": "Sale not found"
+            }
+        )
+    
     return templates.TemplateResponse(
         "pos/receipt.html",
-        {"request": request, "sale": sale}
+        {
+            "request": request,
+            "sale": sale,
+            "user": user_data["user"]
+        }
     )
 
 
@@ -338,15 +396,19 @@ async def search_customer(
 
 def render_cart_partial(cart_items: list, db: Session) -> HTMLResponse:
     """Render cart items container content for HTMX"""
-    from app.config import settings
+    from app.routers.settings import get_setting
     import json as json_lib
+    
+    # Get tax rate from settings
+    tax_rate_str = get_setting(db, "tax_rate", "0.10")
+    tax_rate = Decimal(tax_rate_str)
     
     cart_count = sum(float(item.get("qty", 1)) for item in cart_items)
     count_text = f"{int(cart_count)} item{'s' if cart_count != 1 else ''}"
     
     if not cart_items:
         html = f"""
-        <div id="cart-items" style="flex: 1; overflow-y: auto; min-height: 150px; background: white; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+        <div id="cart-items" style="flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; min-height: 150px; max-height: 400px; background: white; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;">
             <div class="cart-empty">
                 <div class="cart-empty-icon">🛒</div>
                 <p>Your cart is empty</p>
@@ -368,7 +430,9 @@ def render_cart_partial(cart_items: list, db: Session) -> HTMLResponse:
             </div>
         </div>
         <p id="cart-count" hx-swap-oob="true">0 items</p>
-        <button type="submit" class="complete-sale-btn" id="complete-btn" form="complete-sale-form" disabled hx-swap-oob="true">Complete Sale</button>
+        <div id="complete-btn-wrapper" hx-swap-oob="true">
+            <button type="button" class="complete-sale-btn" id="complete-btn" onclick="completeSale()" style="opacity: 0.5; cursor: not-allowed;">Complete Sale</button>
+        </div>
         """
         response = HTMLResponse(html)
         response.set_cookie("cart", "[]", max_age=3600*24, httponly=False, samesite="lax", path="/")
@@ -383,7 +447,6 @@ def render_cart_partial(cart_items: list, db: Session) -> HTMLResponse:
         if item.get("taxable", True):
             taxable_subtotal += line_total
     
-    tax_rate = Decimal(str(settings.default_tax_rate))
     tax_amount = (taxable_subtotal * tax_rate).quantize(Decimal('0.01'))
     total = subtotal + tax_amount
     
@@ -415,7 +478,7 @@ def render_cart_partial(cart_items: list, db: Session) -> HTMLResponse:
     ''' for idx, item in enumerate(cart_items)])
     
     html = f"""
-    <div id="cart-items" style="flex: 1; overflow-y: auto; min-height: 150px; background: white; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+    <div id="cart-items" style="flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; min-height: 150px; max-height: 400px; background: white; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;">
         {items_html}
     </div>
     <div class="cart-totals-modern" id="cart-totals" style="flex-shrink: 0;">
@@ -424,7 +487,7 @@ def render_cart_partial(cart_items: list, db: Session) -> HTMLResponse:
             <span>${float(subtotal):.2f}</span>
         </div>
         <div class="total-line">
-            <span>Tax ({settings.default_tax_rate*100:.0f}%)</span>
+            <span>Tax ({float(tax_rate)*100:.0f}%)</span>
             <span>${float(tax_amount):.2f}</span>
         </div>
         <div class="total-line total">
@@ -433,7 +496,9 @@ def render_cart_partial(cart_items: list, db: Session) -> HTMLResponse:
         </div>
     </div>
     <p id="cart-count" hx-swap-oob="true">{count_text}</p>
-    <button type="submit" class="complete-sale-btn" id="complete-btn" form="complete-sale-form" hx-swap-oob="true">Complete Sale (${float(total):.2f})</button>
+    <div id="complete-btn-wrapper" hx-swap-oob="true">
+        <button type="button" class="complete-sale-btn" id="complete-btn" onclick="completeSale()">Complete Sale (${float(total):.2f})</button>
+    </div>
     """
     
     response = HTMLResponse(html)

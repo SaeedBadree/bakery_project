@@ -31,6 +31,7 @@ async def inventory_dashboard(
         "inventory/dashboard.html",
         {
             "request": request,
+            "user": user_data["user"],
             "products": products,
             "ingredients": ingredients,
             "low_stock_products": low_stock_products,
@@ -86,7 +87,7 @@ async def stocktake_page(
     products = db.query(Product).filter(Product.is_active == True).order_by(Product.name).all()
     return templates.TemplateResponse(
         "inventory/stocktake.html",
-        {"request": request, "products": products}
+        {"request": request, "user": user_data["user"], "products": products}
     )
 
 

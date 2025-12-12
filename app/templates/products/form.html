@@ -44,9 +44,19 @@
         
         <div class="form-group">
             <label>
-                <input type="checkbox" name="taxable" {% if not product or product.taxable %}checked{% endif %}>
+                <input type="checkbox" name="taxable" id="taxable" {% if not product or product.taxable %}checked{% endif %}>
                 Taxable
             </label>
+        </div>
+        
+        <div class="form-group" id="custom-tax-section" style="{% if product and not product.taxable %}display: none;{% endif %}">
+            <label for="custom_tax_rate">Custom Tax Rate (%) - Optional</label>
+            <input type="number" id="custom_tax_rate" name="custom_tax_rate" step="0.01" min="0" max="100" 
+                   value="{% if product and product.custom_tax_rate %}{{ (product.custom_tax_rate * 100)|float }}{% endif %}" 
+                   placeholder="Leave empty to use system default">
+            <small style="color: #6c757d; display: block; margin-top: 0.25rem;">
+                If left empty, the system default tax rate will be used. Enter a value to override for this product.
+            </small>
         </div>
         
         {% if product %}
@@ -69,5 +79,17 @@
         </div>
     </form>
 </div>
+
+<script>
+    // Show/hide custom tax rate field based on taxable checkbox
+    document.getElementById('taxable').addEventListener('change', function() {
+        const customTaxSection = document.getElementById('custom-tax-section');
+        if (this.checked) {
+            customTaxSection.style.display = 'block';
+        } else {
+            customTaxSection.style.display = 'none';
+        }
+    });
+</script>
 {% endblock %}
 

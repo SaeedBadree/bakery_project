@@ -38,6 +38,7 @@ async def list_products(
         "products/list.html",
         {
             "request": request,
+            "user": user_data["user"],
             "products": products,
             "categories": categories,
             "selected_category": category_id,
@@ -56,7 +57,7 @@ async def new_product(
     categories = db.query(Category).order_by(Category.sort_order, Category.name).all()
     return templates.TemplateResponse(
         "products/form.html",
-        {"request": request, "categories": categories, "product": None}
+        {"request": request, "user": user_data["user"], "categories": categories, "product": None}
     )
 
 
@@ -69,6 +70,7 @@ async def create_product(
     price: float = Form(...),
     cost: float = Form(0),
     taxable: bool = Form(True),
+    custom_tax_rate: float = Form(None),
     on_hand: float = Form(0),
     user_data: dict = Depends(require_role(["admin", "manager"])),
     db: Session = Depends(get_db)
@@ -83,11 +85,17 @@ async def create_product(
             "products/form.html",
             {
                 "request": request,
+                "user": user_data["user"],
                 "categories": categories,
                 "product": None,
                 "error": "SKU already exists"
             }
         )
+    
+    # Convert custom tax rate from percentage to decimal
+    custom_tax_decimal = None
+    if custom_tax_rate is not None and custom_tax_rate > 0:
+        custom_tax_decimal = Decimal(str(custom_tax_rate / 100))
     
     product = Product(
         sku=sku,
@@ -96,6 +104,7 @@ async def create_product(
         price=Decimal(str(price)),
         cost=Decimal(str(cost)),
         taxable=taxable,
+        custom_tax_rate=custom_tax_decimal,
         on_hand=Decimal(str(on_hand)),
         is_active=True
     )
@@ -120,7 +129,7 @@ async def edit_product(
     categories = db.query(Category).order_by(Category.sort_order, Category.name).all()
     return templates.TemplateResponse(
         "products/form.html",
-        {"request": request, "categories": categories, "product": product}
+        {"request": request, "user": user_data["user"], "categories": categories, "product": product}
     )
 
 
@@ -134,6 +143,7 @@ async def update_product(
     price: float = Form(...),
     cost: float = Form(0),
     taxable: bool = Form(True),
+    custom_tax_rate: float = Form(None),
     is_active: bool = Form(True),
     on_hand: float = Form(0),
     user_data: dict = Depends(require_role(["admin", "manager"])),
@@ -154,11 +164,17 @@ async def update_product(
                 "products/form.html",
                 {
                     "request": request,
+                    "user": user_data["user"],
                     "categories": categories,
                     "product": product,
                     "error": "SKU already exists"
                 }
             )
+    
+    # Convert custom tax rate from percentage to decimal
+    custom_tax_decimal = None
+    if custom_tax_rate is not None and custom_tax_rate > 0:
+        custom_tax_decimal = Decimal(str(custom_tax_rate / 100))
     
     product.sku = sku
     product.name = name
@@ -166,6 +182,7 @@ async def update_product(
     product.price = Decimal(str(price))
     product.cost = Decimal(str(cost))
     product.taxable = taxable
+    product.custom_tax_rate = custom_tax_decimal
     product.is_active = is_active
     product.on_hand = Decimal(str(on_hand))
     
@@ -183,7 +200,7 @@ async def list_categories(
     categories = db.query(Category).order_by(Category.sort_order, Category.name).all()
     return templates.TemplateResponse(
         "products/categories.html",
-        {"request": request, "categories": categories}
+        {"request": request, "user": user_data["user"], "categories": categories}
     )
 
 
@@ -202,6 +219,7 @@ async def create_category(
             "products/categories.html",
             {
                 "request": request,
+                "user": user_data["user"],
                 "categories": categories,
                 "error": "Category already exists"
             }

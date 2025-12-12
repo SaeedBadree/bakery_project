@@ -38,7 +38,7 @@
 </head>
 <body>
     {% if user %}
-    <header>
+    <header class="no-print">
         <nav>
             <div>
                 <a href="/dashboard">Bakery POS</a>
@@ -48,6 +48,10 @@
                 <li><a href="/pos/checkout">POS / Billing</a></li>
                 <li><a href="/products">Products</a></li>
                 <li><a href="/inventory">Inventory</a></li>
+                <li><a href="/transactions/history">Transactions</a></li>
+                {% if user.role.name == 'admin' %}
+                <li><a href="/settings">⚙️ Settings</a></li>
+                {% endif %}
                 <li><a href="/logout">Logout ({{ user.username }})</a></li>
             </ul>
         </nav>
@@ -56,10 +60,10 @@
     
     <main class="container">
         {% if error %}
-        <div class="alert alert-error">{{ error }}</div>
+        <div class="alert alert-error no-print">{{ error }}</div>
         {% endif %}
         {% if message %}
-        <div class="alert alert-success">{{ message }}</div>
+        <div class="alert alert-success no-print">{{ message }}</div>
         {% endif %}
         
         {% block content %}{% endblock %}

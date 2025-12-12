@@ -111,10 +111,63 @@ async def logout(request: Request):
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request, user_data: dict = Depends(require_auth)):
+async def dashboard(
+    request: Request, 
+    user_data: dict = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
     """Dashboard page"""
+    from datetime import datetime, date
+    from app.models.sale import Sale
+    from sqlalchemy import func
+    
+    # Get today's sales
+    today = date.today()
+    today_sales = db.query(
+        func.count(Sale.id).label('transaction_count'),
+        func.coalesce(func.sum(Sale.total), 0).label('total_sales')
+    ).filter(
+        func.date(Sale.datetime) == today
+    ).first()
+    
     return templates.TemplateResponse(
         "dashboard.html",
-        {"request": request, "user": user_data["user"]}
+        {
+            "request": request,
+            "user": user_data["user"],
+            "today_sales": float(today_sales.total_sales) if today_sales else 0.0,
+            "today_transactions": today_sales.transaction_count if today_sales else 0
+        }
     )
+
+
+@router.get("/dashboard/summary", response_class=HTMLResponse)
+async def dashboard_summary(
+    request: Request,
+    user_data: dict = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Get today's sales summary (for HTMX polling)"""
+    from datetime import date
+    from app.models.sale import Sale
+    from sqlalchemy import func
+    
+    # Get today's sales
+    today = date.today()
+    today_sales = db.query(
+        func.count(Sale.id).label('transaction_count'),
+        func.coalesce(func.sum(Sale.total), 0).label('total_sales')
+    ).filter(
+        func.date(Sale.datetime) == today
+    ).first()
+    
+    sales_total = float(today_sales.total_sales) if today_sales else 0.0
+    transaction_count = today_sales.transaction_count if today_sales else 0
+    
+    return HTMLResponse(f"""
+        <div class="card-header">Today's Summary</div>
+        <p><strong>Sales:</strong> ${sales_total:.2f}</p>
+        <p><strong>Transactions:</strong> {transaction_count}</p>
+        <p style="font-size: 0.8rem; color: #6c757d; margin-top: 1rem;">Auto-refreshes every 5 seconds</p>
+    """)
 

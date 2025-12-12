@@ -6,7 +6,7 @@ from app.database import get_db
 from app.routers.auth import require_auth
 from app.models.product import Product, Category
 from app.models.sale import TenderType
-from app.models.shift import Shift, ShiftStatus
+# Shift system removed for simplicity
 from app.models.ar import Customer
 from app.services.pos import create_sale, get_sale, void_sale, create_return
 from app.schemas.sale import SaleCreate, SaleLineCreate
@@ -337,41 +337,38 @@ async def search_customer(
 
 
 def render_cart_partial(cart_items: list, db: Session) -> HTMLResponse:
-    """Render full cart panel (header + items + totals) for HTMX"""
+    """Render cart items container content for HTMX"""
     from app.config import settings
     import json as json_lib
     
     cart_count = sum(float(item.get("qty", 1)) for item in cart_items)
+    count_text = f"{int(cart_count)} item{'s' if cart_count != 1 else ''}"
     
     if not cart_items:
         html = f"""
-        <div class="cart-header">
-            <h2>Cart</h2>
-            <p id="cart-count">0 items</p>
-        </div>
-        <div class="cart-items-container">
-            <div id="cart-items" style="flex: 1; overflow-y: auto; min-height: 150px; background: white; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
-                <div class="cart-empty">
-                    <div class="cart-empty-icon">🛒</div>
-                    <p>Your cart is empty</p>
-                    <p style="font-size: 0.85rem; margin-top: 0.5rem;">Add products to get started</p>
-                </div>
-            </div>
-            <div class="cart-totals-modern" id="cart-totals" style="flex-shrink: 0;">
-                <div class="total-line">
-                    <span>Subtotal</span>
-                    <span>$0.00</span>
-                </div>
-                <div class="total-line">
-                    <span>Tax</span>
-                    <span>$0.00</span>
-                </div>
-                <div class="total-line total">
-                    <span>Total</span>
-                    <span>$0.00</span>
-                </div>
+        <div id="cart-items" style="flex: 1; overflow-y: auto; min-height: 150px; background: white; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+            <div class="cart-empty">
+                <div class="cart-empty-icon">🛒</div>
+                <p>Your cart is empty</p>
+                <p style="font-size: 0.85rem; margin-top: 0.5rem;">Add products to get started</p>
             </div>
         </div>
+        <div class="cart-totals-modern" id="cart-totals" style="flex-shrink: 0;">
+            <div class="total-line">
+                <span>Subtotal</span>
+                <span>$0.00</span>
+            </div>
+            <div class="total-line">
+                <span>Tax</span>
+                <span>$0.00</span>
+            </div>
+            <div class="total-line total">
+                <span>Total</span>
+                <span>$0.00</span>
+            </div>
+        </div>
+        <p id="cart-count" hx-swap-oob="true">0 items</p>
+        <button type="submit" class="complete-sale-btn" id="complete-btn" form="complete-sale-form" disabled hx-swap-oob="true">Complete Sale</button>
         """
         response = HTMLResponse(html)
         response.set_cookie("cart", "[]", max_age=3600*24, httponly=False, samesite="lax", path="/")
@@ -397,62 +394,46 @@ def render_cart_partial(cart_items: list, db: Session) -> HTMLResponse:
                 <div class="cart-item-details">{item["product_sku"]} • ${float(item["unit_price"]):.2f} each</div>
             </div>
             <div class="cart-item-qty">
-                <form hx-post="/pos/update-cart" hx-target="#cart-panel" hx-swap="innerHTML" hx-headers='{{"HX-Request": "true"}}' style="display: inline;">
+                <form hx-post="/pos/update-cart" hx-target=".cart-items-container" hx-swap="innerHTML" style="display: inline;">
                     <input type="hidden" name="item_index" value="{idx}">
                     <input type="hidden" name="qty" value="{max(0, item['qty'] - 1)}">
                     <button class="qty-btn" type="submit">-</button>
                 </form>
                 <span class="qty-display">{item["qty"]}</span>
-                <form hx-post="/pos/update-cart" hx-target="#cart-panel" hx-swap="innerHTML" hx-headers='{{"HX-Request": "true"}}' style="display: inline;">
+                <form hx-post="/pos/update-cart" hx-target=".cart-items-container" hx-swap="innerHTML" style="display: inline;">
                     <input type="hidden" name="item_index" value="{idx}">
                     <input type="hidden" name="qty" value="{item['qty'] + 1}">
                     <button class="qty-btn" type="submit">+</button>
                 </form>
             </div>
             <div class="cart-item-price">${float(Decimal(str(item["qty"])) * Decimal(str(item["unit_price"])) - Decimal(str(item.get("line_discount", 0)))):.2f}</div>
-            <form hx-post="/pos/remove-from-cart" hx-target="#cart-panel" hx-swap="innerHTML" hx-headers='{{"HX-Request": "true"}}' style="display: inline;">
+            <form hx-post="/pos/remove-from-cart" hx-target=".cart-items-container" hx-swap="innerHTML" style="display: inline;">
                 <input type="hidden" name="item_index" value="{idx}">
                 <button class="qty-btn" type="submit" style="background: #fee; color: #c33;">×</button>
             </form>
         </div>
     ''' for idx, item in enumerate(cart_items)])
     
-    count_text = f"{int(cart_count)} item{'s' if cart_count != 1 else ''}"
-    
     html = f"""
-    <div class="cart-header">
-        <h2>Cart</h2>
-        <p id="cart-count">{count_text}</p>
+    <div id="cart-items" style="flex: 1; overflow-y: auto; min-height: 150px; background: white; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+        {items_html}
     </div>
-    <div class="cart-items-container">
-        <div id="cart-items" style="flex: 1; overflow-y: auto; min-height: 150px; background: white; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
-            {items_html}
+    <div class="cart-totals-modern" id="cart-totals" style="flex-shrink: 0;">
+        <div class="total-line">
+            <span>Subtotal</span>
+            <span>${float(subtotal):.2f}</span>
         </div>
-        <div class="cart-totals-modern" id="cart-totals" style="flex-shrink: 0;">
-            <div class="total-line">
-                <span>Subtotal</span>
-                <span>${float(subtotal):.2f}</span>
-            </div>
-            <div class="total-line">
-                <span>Tax ({settings.default_tax_rate*100:.0f}%)</span>
-                <span>${float(tax_amount):.2f}</span>
-            </div>
-            <div class="total-line total">
-                <span>Total</span>
-                <span>${float(total):.2f}</span>
-            </div>
+        <div class="total-line">
+            <span>Tax ({settings.default_tax_rate*100:.0f}%)</span>
+            <span>${float(tax_amount):.2f}</span>
+        </div>
+        <div class="total-line total">
+            <span>Total</span>
+            <span>${float(total):.2f}</span>
         </div>
     </div>
-    <script>
-        // Enable the Complete Sale button and update text
-        setTimeout(function() {{
-            const btn = document.getElementById('complete-btn');
-            if (btn) {{
-                btn.disabled = false;
-                btn.textContent = 'Complete Sale (${float(total):.2f})';
-            }}
-        }}, 10);
-    </script>
+    <p id="cart-count" hx-swap-oob="true">{count_text}</p>
+    <button type="submit" class="complete-sale-btn" id="complete-btn" form="complete-sale-form" hx-swap-oob="true">Complete Sale (${float(total):.2f})</button>
     """
     
     response = HTMLResponse(html)

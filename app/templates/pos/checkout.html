@@ -519,9 +519,8 @@
         <div id="product-grid" class="products-grid">
             {% for product in products %}
             <form hx-post="/pos/add-to-cart"
-                  hx-target="#cart-panel"
+                  hx-target=".cart-items-container"
                   hx-swap="innerHTML"
-                  hx-headers='{"HX-Request": "true"}'
                   style="margin: 0; display: block; height: 100%;">
                 <input type="hidden" name="product_id" value="{{ product.id }}">
                 <input type="hidden" name="qty" value="1">
@@ -538,38 +537,17 @@
     
     <!-- Cart Panel -->
     <div class="pos-cart-panel">
-        <div id="cart-panel"
-             hx-trigger="load"
-             hx-get="/pos/render-cart"
-             hx-target="#cart-panel"
-             hx-swap="innerHTML"
-             hx-headers='{"HX-Request": "true"}'>
+        <div id="cart-panel">
+            <!-- Cart content will be loaded here -->
             <div class="cart-header">
                 <h2>Cart</h2>
-                <p id="cart-count">0 items</p>
+                <p id="cart-count">Loading...</p>
             </div>
-            <div class="cart-items-container">
-                <div id="cart-items" style="flex: 1; overflow-y: auto; min-height: 150px; background: white; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
-                    <div class="cart-empty">
-                        <div class="cart-empty-icon">🛒</div>
-                        <p>Your cart is empty</p>
-                        <p style="font-size: 0.85rem; margin-top: 0.5rem;">Add products to get started</p>
-                    </div>
-                </div>
-                <div class="cart-totals-modern" id="cart-totals" style="flex-shrink: 0;">
-                    <div class="total-line">
-                        <span>Subtotal</span>
-                        <span>$0.00</span>
-                    </div>
-                    <div class="total-line">
-                        <span>Tax</span>
-                        <span>$0.00</span>
-                    </div>
-                    <div class="total-line total">
-                        <span>Total</span>
-                        <span>$0.00</span>
-                    </div>
-                </div>
+            <div class="cart-items-container" 
+                 hx-trigger="load" 
+                 hx-get="/pos/render-cart" 
+                 hx-swap="innerHTML">
+                <div style="padding: 2rem; text-align: center;">Loading cart...</div>
             </div>
         </div>
         

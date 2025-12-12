@@ -7,4 +7,3 @@ This is a bakery project repository.
 
 ## Getting Started
 More information will be added here as the project develops.
-

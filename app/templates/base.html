@@ -7,15 +7,30 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script>
-        // Configure HTMX to include credentials (cookies) with all requests
-        document.body.addEventListener('htmx:configRequest', function(evt) {
+        // Configure HTMX to include credentials (cookies) with all requests.
+        // Use document-level listeners so the handler exists before <body> is ready.
+        document.addEventListener('htmx:configRequest', function(evt) {
             evt.detail.credentials = 'include';
+            evt.detail.headers['X-Requested-With'] = 'XMLHttpRequest';
         });
         
         // Handle authentication errors from HTMX
-        document.body.addEventListener('htmx:responseError', function(evt) {
+        document.addEventListener('htmx:responseError', function(evt) {
             if (evt.detail.xhr.status === 401) {
                 window.location.href = '/login';
+            }
+        });
+        
+        // Store cart in sessionStorage as backup
+        document.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.detail.pathInfo?.requestPath?.includes('/pos/')) {
+                const cartCookie = document.cookie.split('; ').find(row => row.startsWith('cart='));
+                if (cartCookie) {
+                    const cartValue = cartCookie.split('=')[1];
+                    try {
+                        sessionStorage.setItem('cart', decodeURIComponent(cartValue));
+                    } catch(e) {}
+                }
             }
         });
     </script>

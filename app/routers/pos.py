@@ -38,6 +38,22 @@ async def checkout_page(
     )
 
 
+@router.get("/pos/render-cart", response_class=HTMLResponse)
+async def render_cart(
+    request: Request,
+    user_data: dict = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Render cart partial (GET endpoint for initial load)"""
+    cart = request.cookies.get("cart", "[]")
+    try:
+        cart_items = json.loads(cart)
+    except:
+        cart_items = []
+    
+    return render_cart_partial(cart_items, db)
+
+
 @router.post("/pos/add-to-cart", response_class=HTMLResponse)
 async def add_to_cart(
     request: Request,
@@ -51,7 +67,7 @@ async def add_to_cart(
     if not product or not product.is_active:
         return HTMLResponse("<div class='alert alert-error'>Product not found</div>")
     
-    # Get cart from session (stored in cookie/session)
+    # Get cart from cookies
     cart = request.cookies.get("cart", "[]")
     try:
         cart_items = json.loads(cart)
@@ -77,52 +93,100 @@ async def add_to_cart(
             "line_discount": 0
         })
     
-    # Render cart partial
-    return render_cart_partial(cart_items, db)
+    # Render cart partial with full cart container
+    import json as json_lib
+    cart_json = json_lib.dumps(cart_items)
+    response = render_cart_partial(cart_items, db)
+    # Ensure cookie is set with proper attributes
+    response.set_cookie("cart", cart_json, max_age=3600*24, httponly=False, samesite="lax", path="/")
+    return response
 
 
 @router.post("/pos/update-cart", response_class=HTMLResponse)
 async def update_cart(
     request: Request,
-    item_index: int = Form(...),
-    qty: float = Form(...),
+    item_index: int = Form(None),
+    qty: float = Form(None),
     user_data: dict = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Update cart item quantity"""
+    # Try to get item_index from any form field name pattern
+    form_data = await request.form()
+    item_index = None
+    qty = None
+    
+    for key, value in form_data.items():
+        if key.startswith("item_index_"):
+            item_index = int(value)
+        elif key.startswith("qty_") and key != "qty":
+            qty = float(value)
+    
+    if item_index is None or qty is None:
+        # Fallback to direct form fields
+        item_index = form_data.get("item_index", None)
+        qty = form_data.get("qty", None)
+        if item_index is not None:
+            item_index = int(item_index)
+        if qty is not None:
+            qty = float(qty)
+    
     cart = request.cookies.get("cart", "[]")
     try:
         cart_items = json.loads(cart)
     except:
         cart_items = []
     
-    if 0 <= item_index < len(cart_items):
-        if qty <= 0:
-            cart_items.pop(item_index)
-        else:
-            cart_items[item_index]["qty"] = qty
+    if item_index is not None and 0 <= item_index < len(cart_items):
+        if qty is not None:
+            if qty <= 0:
+                cart_items.pop(item_index)
+            else:
+                cart_items[item_index]["qty"] = qty
     
-    return render_cart_partial(cart_items, db)
+    import json as json_lib
+    cart_json = json_lib.dumps(cart_items)
+    response = render_cart_partial(cart_items, db)
+    response.set_cookie("cart", cart_json, max_age=3600*24, httponly=False, samesite="lax", path="/")
+    return response
 
 
 @router.post("/pos/remove-from-cart", response_class=HTMLResponse)
 async def remove_from_cart(
     request: Request,
-    item_index: int = Form(...),
+    item_index: int = Form(None),
     user_data: dict = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Remove item from cart"""
+    # Try to get item_index from any form field name pattern
+    form_data = await request.form()
+    item_index = None
+    
+    for key, value in form_data.items():
+        if key.startswith("item_index_"):
+            item_index = int(value)
+            break
+    
+    if item_index is None:
+        item_index = form_data.get("item_index", None)
+        if item_index is not None:
+            item_index = int(item_index)
+    
     cart = request.cookies.get("cart", "[]")
     try:
         cart_items = json.loads(cart)
     except:
         cart_items = []
     
-    if 0 <= item_index < len(cart_items):
+    if item_index is not None and 0 <= item_index < len(cart_items):
         cart_items.pop(item_index)
     
-    return render_cart_partial(cart_items, db)
+    import json as json_lib
+    cart_json = json_lib.dumps(cart_items)
+    response = render_cart_partial(cart_items, db)
+    response.set_cookie("cart", cart_json, max_age=3600*24, httponly=False, samesite="lax", path="/")
+    return response
 
 
 @router.post("/pos/apply-discount", response_class=HTMLResponse)
@@ -160,7 +224,14 @@ async def complete_sale(
     db: Session = Depends(get_db)
 ):
     """Complete a sale"""
+    # Try to get cart from cookies
     cart = request.cookies.get("cart", "[]")
+    # Also try to get from form data if sent
+    form_data = await request.form()
+    cart_from_form = form_data.get("cart_data", None)
+    if cart_from_form:
+        cart = cart_from_form
+    
     try:
         cart_items = json.loads(cart)
     except:
@@ -175,6 +246,15 @@ async def complete_sale(
                 "error": "Cart is empty"
             }
         )
+    
+    # Handle customer_id - convert empty string to None
+    if customer_id == "" or customer_id == "0":
+        customer_id = None
+    elif customer_id:
+        try:
+            customer_id = int(customer_id)
+        except (ValueError, TypeError):
+            customer_id = None
     
     # Build sale lines
     sale_lines = []
@@ -196,14 +276,14 @@ async def complete_sale(
     )
     
     try:
-        sale = create_sale(db, sale_data, user_data["user"].id)
+        sale = create_sale(db, sale_data, user_data["user"].id, shift_id=None)
         
         # Clear cart
         response = RedirectResponse(
             url=f"/pos/receipt/{sale.id}",
             status_code=302
         )
-        response.delete_cookie("cart")
+        response.set_cookie("cart", "[]", max_age=0, path="/", samesite="lax", httponly=False)
         return response
     except Exception as e:
         return templates.TemplateResponse(
@@ -239,11 +319,15 @@ async def search_customer(
     db: Session = Depends(get_db)
 ):
     """Search customers (HTMX)"""
+    # Also try to get from query params directly
     if not q:
+        q = request.query_params.get("q", "")
+    
+    if not q or len(q.strip()) < 2:
         return HTMLResponse("")
     
     customers = db.query(Customer).filter(
-        Customer.name.ilike(f"%{q}%")
+        Customer.name.ilike(f"%{q.strip()}%")
     ).limit(10).all()
     
     return templates.TemplateResponse(
@@ -253,8 +337,45 @@ async def search_customer(
 
 
 def render_cart_partial(cart_items: list, db: Session) -> HTMLResponse:
-    """Render cart partial for HTMX"""
+    """Render full cart panel (header + items + totals) for HTMX"""
     from app.config import settings
+    import json as json_lib
+    
+    cart_count = sum(float(item.get("qty", 1)) for item in cart_items)
+    
+    if not cart_items:
+        html = f"""
+        <div class="cart-header">
+            <h2>Cart</h2>
+            <p id="cart-count">0 items</p>
+        </div>
+        <div class="cart-items-container">
+            <div id="cart-items" style="flex: 1; overflow-y: auto; min-height: 150px; background: white; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">🛒</div>
+                    <p>Your cart is empty</p>
+                    <p style="font-size: 0.85rem; margin-top: 0.5rem;">Add products to get started</p>
+                </div>
+            </div>
+            <div class="cart-totals-modern" id="cart-totals" style="flex-shrink: 0;">
+                <div class="total-line">
+                    <span>Subtotal</span>
+                    <span>$0.00</span>
+                </div>
+                <div class="total-line">
+                    <span>Tax</span>
+                    <span>$0.00</span>
+                </div>
+                <div class="total-line total">
+                    <span>Total</span>
+                    <span>$0.00</span>
+                </div>
+            </div>
+        </div>
+        """
+        response = HTMLResponse(html)
+        response.set_cookie("cart", "[]", max_age=3600*24, httponly=False, samesite="lax", path="/")
+        return response
     
     subtotal = Decimal('0')
     taxable_subtotal = Decimal('0')
@@ -269,45 +390,72 @@ def render_cart_partial(cart_items: list, db: Session) -> HTMLResponse:
     tax_amount = (taxable_subtotal * tax_rate).quantize(Decimal('0.01'))
     total = subtotal + tax_amount
     
-    html = f"""
-    <div id="cart-items">
-        {"".join([f'''
-        <div class="cart-item">
-            <div>
-                <strong>{item["product_name"]}</strong><br>
-                <small>{item["product_sku"]}</small>
+    items_html = "".join([f'''
+        <div class="cart-item-modern">
+            <div class="cart-item-info">
+                <div class="cart-item-name">{item["product_name"]}</div>
+                <div class="cart-item-details">{item["product_sku"]} • ${float(item["unit_price"]):.2f} each</div>
             </div>
-            <div>
-                <input type="number" 
-                       hx-post="/pos/update-cart" 
-                       hx-trigger="change" 
-                       hx-target="#cart-container"
-                       hx-include="[name='item_index']"
-                       name="qty" 
-                       value="{item["qty"]}" 
-                       min="0" 
-                       step="0.01"
-                       style="width: 80px;">
+            <div class="cart-item-qty">
+                <form hx-post="/pos/update-cart" hx-target="#cart-panel" hx-swap="innerHTML" hx-headers='{{"HX-Request": "true"}}' style="display: inline;">
+                    <input type="hidden" name="item_index" value="{idx}">
+                    <input type="hidden" name="qty" value="{max(0, item['qty'] - 1)}">
+                    <button class="qty-btn" type="submit">-</button>
+                </form>
+                <span class="qty-display">{item["qty"]}</span>
+                <form hx-post="/pos/update-cart" hx-target="#cart-panel" hx-swap="innerHTML" hx-headers='{{"HX-Request": "true"}}' style="display: inline;">
+                    <input type="hidden" name="item_index" value="{idx}">
+                    <input type="hidden" name="qty" value="{item['qty'] + 1}">
+                    <button class="qty-btn" type="submit">+</button>
+                </form>
+            </div>
+            <div class="cart-item-price">${float(Decimal(str(item["qty"])) * Decimal(str(item["unit_price"])) - Decimal(str(item.get("line_discount", 0)))):.2f}</div>
+            <form hx-post="/pos/remove-from-cart" hx-target="#cart-panel" hx-swap="innerHTML" hx-headers='{{"HX-Request": "true"}}' style="display: inline;">
                 <input type="hidden" name="item_index" value="{idx}">
-                <button hx-post="/pos/remove-from-cart" 
-                        hx-target="#cart-container"
-                        hx-include="[name='item_index']"
-                        name="item_index" 
-                        value="{idx}"
-                        class="btn btn-danger btn-sm">Remove</button>
+                <button class="qty-btn" type="submit" style="background: #fee; color: #c33;">×</button>
+            </form>
+        </div>
+    ''' for idx, item in enumerate(cart_items)])
+    
+    count_text = f"{int(cart_count)} item{'s' if cart_count != 1 else ''}"
+    
+    html = f"""
+    <div class="cart-header">
+        <h2>Cart</h2>
+        <p id="cart-count">{count_text}</p>
+    </div>
+    <div class="cart-items-container">
+        <div id="cart-items" style="flex: 1; overflow-y: auto; min-height: 150px; background: white; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+            {items_html}
+        </div>
+        <div class="cart-totals-modern" id="cart-totals" style="flex-shrink: 0;">
+            <div class="total-line">
+                <span>Subtotal</span>
+                <span>${float(subtotal):.2f}</span>
             </div>
-            <div class="text-right">
-                ${float(item["unit_price"]):.2f} × {item["qty"]} = ${float(Decimal(str(item["qty"])) * Decimal(str(item["unit_price"])) - Decimal(str(item.get("line_discount", 0)))):.2f}
+            <div class="total-line">
+                <span>Tax ({settings.default_tax_rate*100:.0f}%)</span>
+                <span>${float(tax_amount):.2f}</span>
+            </div>
+            <div class="total-line total">
+                <span>Total</span>
+                <span>${float(total):.2f}</span>
             </div>
         </div>
-        ''' for idx, item in enumerate(cart_items)])}
     </div>
-    <div class="cart-totals">
-        <div>Subtotal: <strong>${float(subtotal):.2f}</strong></div>
-        <div>Tax: <strong>${float(tax_amount):.2f}</strong></div>
-        <div class="total">Total: <strong>${float(total):.2f}</strong></div>
-    </div>
+    <script>
+        // Enable the Complete Sale button and update text
+        setTimeout(function() {{
+            const btn = document.getElementById('complete-btn');
+            if (btn) {{
+                btn.disabled = false;
+                btn.textContent = 'Complete Sale (${float(total):.2f})';
+            }}
+        }}, 10);
+    </script>
     """
     
-    return HTMLResponse(html)
+    response = HTMLResponse(html)
+    response.set_cookie("cart", json_lib.dumps(cart_items), max_age=3600*24, httponly=False, samesite="lax", path="/")
+    return response
 

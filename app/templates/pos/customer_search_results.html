@@ -1,13 +1,14 @@
 {% if customers %}
-<div style="border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+<div style="background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: 0.5rem; max-height: 200px; overflow-y: auto;">
     {% for customer in customers %}
     <a href="#" 
        data-customer-id="{{ customer.id }}" 
-       style="display: block; padding: 0.5rem; border-bottom: 1px solid #eee; text-decoration: none; color: #333;">
-        {{ customer.name }}
-        {% if customer.phone %}<small>({{ customer.phone }})</small>{% endif %}
+       style="display: block; padding: 0.75rem 1rem; border-bottom: 1px solid #e9ecef; text-decoration: none; color: #1a1a1a; transition: background 0.2s;"
+       onmouseover="this.style.background='#f8f9fa'"
+       onmouseout="this.style.background='white'">
+        <div style="font-weight: 600;">{{ customer.name }}</div>
+        {% if customer.phone %}<div style="font-size: 0.85rem; color: #6c757d;">{{ customer.phone }}</div>{% endif %}
     </a>
     {% endfor %}
 </div>
 {% endif %}
-

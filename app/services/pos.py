@@ -21,18 +21,14 @@ def calculate_tax(subtotal: Decimal, taxable_amount: Decimal, tax_rate: Decimal 
 
 def create_sale(db: Session, sale_data: SaleCreate, cashier_id: int, shift_id: int = None) -> Sale:
     """Create a new sale"""
-    # Get or create shift
-    if not shift_id:
-        shift = db.query(Shift).filter(
-            Shift.cashier_id == cashier_id,
-            Shift.status == ShiftStatus.OPEN
-        ).first()
-        if not shift:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No open shift found. Please open a shift first."
-            )
-        shift_id = shift.id
+    # Shift is optional - can be None for direct sales
+    # if not shift_id:
+    #     shift = db.query(Shift).filter(
+    #         Shift.cashier_id == cashier_id,
+    #         Shift.status == ShiftStatus.OPEN
+    #     ).first()
+    #     if shift:
+    #         shift_id = shift.id
     
     # Calculate totals
     subtotal = Decimal('0')

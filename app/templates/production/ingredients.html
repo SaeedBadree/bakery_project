@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Ingredients - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Ingredients</h1>
+
+<div class="card">
+    <h2>Add Ingredient</h2>
+    <form method="post" action="/production/ingredients">
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" required>
+            </div>
+            <div class="form-group">
+                <label>Unit</label>
+                <input type="text" name="unit" placeholder="g, kg, ml, unit" required>
+            </div>
+            <div class="form-group">
+                <label>Cost per Unit</label>
+                <input type="number" name="cost_per_unit" step="0.0001" min="0" required>
+            </div>
+            <div class="form-group">
+                <label>On Hand</label>
+                <input type="number" name="on_hand" step="0.01" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label>Reorder Point</label>
+                <input type="number" name="reorder_point" step="0.01" min="0" value="0">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Ingredient</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>All Ingredients</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Unit</th>
+                <th>Cost/Unit</th>
+                <th>On Hand</th>
+                <th>Reorder Point</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ing in ingredients %}
+            <tr>
+                <td>{{ ing.name }}</td>
+                <td>{{ ing.unit }}</td>
+                <td>${{ "%.4f"|format(ing.cost_per_unit) }}</td>
+                <td>{{ ing.on_hand }}</td>
+                <td>{{ ing.reorder_point }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Products - Bakery POS{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-2">
+    <h1>Products</h1>
+    <a href="/products/new" class="btn btn-primary">New Product</a>
+</div>
+
+<div class="card">
+    <form method="get" action="/products" class="flex gap-2 mb-2">
+        <input type="text" name="search" placeholder="Search products..." value="{{ search or '' }}" class="form-group" style="flex: 1;">
+        <select name="category_id" class="form-group">
+            <option value="">All Categories</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if selected_category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-secondary">Filter</button>
+    </form>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>On Hand</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.sku }}</td>
+                <td>{{ product.name }}</td>
+                <td>{{ product.category.name }}</td>
+                <td>${{ "%.2f"|format(product.price) }}</td>
+                <td>{{ product.on_hand }}</td>
+                <td>
+                    <a href="/products/{{ product.id }}/edit" class="btn btn-secondary btn-sm">Edit</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+

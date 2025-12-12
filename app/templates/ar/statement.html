@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Statement - {{ customer.name }}{% endblock %}
+
+{% block content %}
+<div class="receipt">
+    <h2 style="text-align: center;">Account Statement</h2>
+    <h3 style="text-align: center;">{{ customer.name }}</h3>
+    <p style="text-align: center;">{{ customer.address or '' }}</p>
+    <hr>
+    
+    <div style="margin-bottom: 1rem;">
+        <p><strong>Current Balance:</strong> ${{ "%.2f"|format(customer.balance) }}</p>
+        <p><strong>Credit Limit:</strong> ${{ "%.2f"|format(customer.credit_limit) }}</p>
+    </div>
+    
+    <h3>Aging Summary</h3>
+    <table style="width: 100%; margin-bottom: 1rem;">
+        <tr>
+            <th>0-30 Days</th>
+            <th>31-60 Days</th>
+            <th>61-90 Days</th>
+            <th>90+ Days</th>
+        </tr>
+        <tr>
+            <td>${{ "%.2f"|format(aging['0-30']) }}</td>
+            <td>${{ "%.2f"|format(aging['31-60']) }}</td>
+            <td>${{ "%.2f"|format(aging['61-90']) }}</td>
+            <td>${{ "%.2f"|format(aging['90+']) }}</td>
+        </tr>
+    </table>
+    
+    <h3>Transaction History</h3>
+    <table style="width: 100%;">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ entry.date.strftime('%Y-%m-%d') }}</td>
+                <td>{{ entry.entry_type.value }}</td>
+                <td>${{ "%.2f"|format(entry.amount) }}</td>
+                <td>${{ "%.2f"|format(entry.balance) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="no-print" style="margin-top: 2rem; text-align: center;">
+        <button onclick="window.print()" class="btn btn-primary">Print</button>
+    </div>
+</div>
+{% endblock %}
+

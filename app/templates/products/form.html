@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}{% if product %}Edit{% else %}New{% endif %} Product - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>{% if product %}Edit{% else %}New{% endif %} Product</h1>
+
+<div class="card">
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    
+    <form method="post" action="{% if product %}/products/{{ product.id }}{% else %}/products{% endif %}">
+        <div class="form-group">
+            <label for="sku">SKU</label>
+            <input type="text" id="sku" name="sku" value="{{ product.sku if product else '' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" value="{{ product.name if product else '' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="category_id">Category</label>
+            <select id="category_id" name="category_id" required>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if product and product.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label for="price">Price</label>
+                <input type="number" id="price" name="price" step="0.01" value="{{ product.price if product else '' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="cost">Cost</label>
+                <input type="number" id="cost" name="cost" step="0.01" value="{{ product.cost if product else 0 }}">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="taxable" {% if not product or product.taxable %}checked{% endif %}>
+                Taxable
+            </label>
+        </div>
+        
+        {% if product %}
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_active" {% if product.is_active %}checked{% endif %}>
+                Active
+            </label>
+        </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="on_hand">On Hand Quantity</label>
+            <input type="number" id="on_hand" name="on_hand" step="0.01" value="{{ product.on_hand if product else 0 }}">
+        </div>
+        
+        <div class="flex gap-2">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a href="/products" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

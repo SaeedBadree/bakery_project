@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Receipt - Bakery POS{% endblock %}
+
+{% block content %}
+<div class="receipt">
+    <h2 style="text-align: center;">{{ sale.sale_number }}</h2>
+    <p style="text-align: center;">{{ sale.datetime.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    <hr>
+    
+    {% for line in sale.sale_lines %}
+    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+        <div>
+            {{ line.product.name }}<br>
+            <small>{{ line.qty }} × ${{ "%.2f"|format(line.unit_price) }}</small>
+        </div>
+        <div>${{ "%.2f"|format(line.line_total) }}</div>
+    </div>
+    {% endfor %}
+    
+    <hr>
+    <div style="display: flex; justify-content: space-between;">
+        <div>Subtotal:</div>
+        <div>${{ "%.2f"|format(sale.subtotal) }}</div>
+    </div>
+    {% if sale.discount_amount > 0 %}
+    <div style="display: flex; justify-content: space-between;">
+        <div>Discount:</div>
+        <div>-${{ "%.2f"|format(sale.discount_amount) }}</div>
+    </div>
+    {% endif %}
+    <div style="display: flex; justify-content: space-between;">
+        <div>Tax:</div>
+        <div>${{ "%.2f"|format(sale.tax_amount) }}</div>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem;">
+        <div>Total:</div>
+        <div>${{ "%.2f"|format(sale.total) }}</div>
+    </div>
+    <div style="margin-top: 1rem;">
+        <strong>Payment:</strong> {{ sale.tender_type.value|title }}
+    </div>
+    
+    <div class="no-print" style="margin-top: 2rem; text-align: center;">
+        <button onclick="window.print()" class="btn btn-primary">Print</button>
+        <a href="/pos/checkout" class="btn btn-secondary">New Sale</a>
+    </div>
+</div>
+{% endblock %}
+

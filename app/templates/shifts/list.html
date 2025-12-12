@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Shifts - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Shifts</h1>
+<a href="/shifts/open" class="btn btn-primary mb-2">Open New Shift</a>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Cashier</th>
+            <th>Opened</th>
+            <th>Closed</th>
+            <th>Opening Float</th>
+            <th>Expected Cash</th>
+            <th>Counted Cash</th>
+            <th>Over/Short</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for shift in shifts %}
+        <tr>
+            <td>{{ shift.cashier.username }}</td>
+            <td>{{ shift.opened_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ shift.closed_at.strftime('%Y-%m-%d %H:%M') if shift.closed_at else '-' }}</td>
+            <td>${{ "%.2f"|format(shift.opening_float) }}</td>
+            <td>${{ "%.2f"|format(shift.expected_cash) if shift.expected_cash else '-' }}</td>
+            <td>${{ "%.2f"|format(shift.counted_cash) if shift.counted_cash else '-' }}</td>
+            <td>${{ "%.2f"|format(shift.over_short) if shift.over_short else '-' }}</td>
+            <td>{{ shift.status.value }}</td>
+            <td>
+                {% if shift.status.value == 'open' %}
+                <a href="/shifts/current" class="btn btn-secondary btn-sm">View</a>
+                {% else %}
+                <a href="/shifts/{{ shift.id }}/reconciliation" class="btn btn-secondary btn-sm">View Report</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Reports</h1>
+
+<div class="grid grid-2">
+    <div class="card">
+        <h2>Sales Reports</h2>
+        <ul>
+            <li><a href="/reports/daily-sales">Daily Sales</a></li>
+            <li><a href="/reports/top-products">Top Products</a></li>
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h2>Inventory Reports</h2>
+        <ul>
+            <li><a href="/reports/inventory-valuation">Inventory Valuation</a></li>
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h2>Production Reports</h2>
+        <ul>
+            <li><a href="/reports/wastage">Wastage Report</a></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+

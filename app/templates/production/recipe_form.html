@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}New Recipe - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>New Recipe</h1>
+
+<div class="card">
+    <form method="post" action="/production/recipes">
+        <div class="form-group">
+            <label>Recipe Name</label>
+            <input type="text" name="name" required>
+        </div>
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label>Yield Quantity</label>
+                <input type="number" name="yield_qty" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+                <label>Yield Unit</label>
+                <input type="text" name="yield_unit" placeholder="loaves, units, etc." required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Notes</label>
+            <textarea name="notes"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Create Recipe</button>
+        <a href="/production/recipes" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Receive PO - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Receive Purchase Order: {{ po.po_number }}</h1>
+
+<div class="card">
+    <h2>PO Details</h2>
+    <p><strong>Vendor:</strong> {{ po.vendor.name }}</p>
+    <p><strong>Date:</strong> {{ po.date.strftime('%Y-%m-%d') }}</p>
+    <p><strong>Status:</strong> {{ po.status.value }}</p>
+</div>
+
+<div class="card">
+    <h2>Receive Items</h2>
+    <form method="post" action="/purchasing/pos/{{ po.id }}/receive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Ingredient</th>
+                    <th>Qty Ordered</th>
+                    <th>Qty Received</th>
+                    <th>Unit Cost</th>
+                    <th>Actual Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in po.po_lines %}
+                <tr>
+                    <td>{{ line.ingredient.name }}</td>
+                    <td>{{ line.qty_ordered }}</td>
+                    <td>
+                        <input type="number" name="qty_{{ line.id }}" step="0.01" min="0" max="{{ line.qty_ordered }}" value="{{ line.qty_received }}">
+                    </td>
+                    <td>${{ "%.4f"|format(line.unit_cost) }}</td>
+                    <td>
+                        <input type="number" name="cost_{{ line.id }}" step="0.0001" min="0" value="{{ line.unit_cost }}">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-primary">Receive PO</button>
+    </form>
+</div>
+{% endblock %}
+

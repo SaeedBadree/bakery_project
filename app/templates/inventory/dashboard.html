@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Inventory Dashboard</h1>
+
+{% if low_stock_products or low_stock_ingredients %}
+<div class="card">
+    <h2 class="alert alert-error">Low Stock Alerts</h2>
+    {% if low_stock_products %}
+    <h3>Products</h3>
+    <ul>
+        {% for product in low_stock_products %}
+        <li>{{ product.name }} - {{ product.on_hand }} on hand</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% if low_stock_ingredients %}
+    <h3>Ingredients</h3>
+    <ul>
+        {% for ing in low_stock_ingredients %}
+        <li>{{ ing.name }} - {{ ing.on_hand }} {{ ing.unit }} (reorder at {{ ing.reorder_point }})</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="grid grid-2">
+    <div class="card">
+        <h2>Products</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>On Hand</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.on_hand }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="card">
+        <h2>Ingredients</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>On Hand</th>
+                    <th>Unit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ing in ingredients %}
+                <tr>
+                    <td>{{ ing.name }}</td>
+                    <td>{{ ing.on_hand }}</td>
+                    <td>{{ ing.unit }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

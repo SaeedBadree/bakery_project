@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Take - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Stock Take</h1>
+
+<div class="card">
+    <form method="post" action="/inventory/stocktake">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Current On Hand</th>
+                    <th>Counted</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.on_hand }}</td>
+                    <td>
+                        <input type="number" name="count_{{ product.id }}" step="0.01" value="{{ product.on_hand }}">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-primary">Complete Stock Take</button>
+    </form>
+</div>
+{% endblock %}
+

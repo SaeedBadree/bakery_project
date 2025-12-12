@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Close Shift - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Close Shift</h1>
+
+<div class="card">
+    <p><strong>Expected Cash:</strong> ${{ "%.2f"|format(shift.expected_cash) }}</p>
+    
+    <form method="post" action="/shifts/{{ shift.id }}/close">
+        <div class="form-group">
+            <label for="counted_cash">Counted Cash ($)</label>
+            <input type="number" id="counted_cash" name="counted_cash" step="0.01" min="0" required>
+        </div>
+        <button type="submit" class="btn btn-danger">Close Shift</button>
+        <a href="/shifts/current" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+

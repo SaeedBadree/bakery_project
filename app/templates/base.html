@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bakery POS{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script>
+        // Configure HTMX to include credentials (cookies) with all requests
+        document.body.addEventListener('htmx:configRequest', function(evt) {
+            evt.detail.credentials = 'include';
+        });
+        
+        // Handle authentication errors from HTMX
+        document.body.addEventListener('htmx:responseError', function(evt) {
+            if (evt.detail.xhr.status === 401) {
+                window.location.href = '/login';
+            }
+        });
+    </script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% if user %}
+    <header>
+        <nav>
+            <div>
+                <a href="/dashboard">Bakery POS</a>
+            </div>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/pos/checkout">POS</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="/inventory">Inventory</a></li>
+                <li><a href="/production">Production</a></li>
+                <li><a href="/purchasing">Purchasing</a></li>
+                <li><a href="/ar">Accounts Receivable</a></li>
+                <li><a href="/shifts">Shifts</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/logout">Logout ({{ user.username }})</a></li>
+            </ul>
+        </nav>
+    </header>
+    {% endif %}
+    
+    <main class="container">
+        {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+        {% if message %}
+        <div class="alert alert-success">{{ message }}</div>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </main>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Reconciliation - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Shift Reconciliation</h1>
+
+<div class="card">
+    <h2>Summary</h2>
+    <p><strong>Cashier:</strong> {{ shift.cashier.username }}</p>
+    <p><strong>Opened:</strong> {{ shift.opened_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    <p><strong>Closed:</strong> {{ shift.closed_at.strftime('%Y-%m-%d %H:%M:%S') if shift.closed_at else 'Not closed' }}</p>
+    <p><strong>Opening Float:</strong> ${{ "%.2f"|format(shift.opening_float) }}</p>
+    <p><strong>Expected Cash:</strong> ${{ "%.2f"|format(shift.expected_cash) }}</p>
+    <p><strong>Counted Cash:</strong> ${{ "%.2f"|format(shift.counted_cash) if shift.counted_cash else '-' }}</p>
+    <p><strong>Over/Short:</strong> ${{ "%.2f"|format(shift.over_short) if shift.over_short else '-' }}</p>
+</div>
+
+<div class="card">
+    <h2>Sales</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Sale #</th>
+                <th>Time</th>
+                <th>Total</th>
+                <th>Tender</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in sales %}
+            <tr>
+                <td>{{ sale.sale_number }}</td>
+                <td>{{ sale.datetime.strftime('%H:%M:%S') }}</td>
+                <td>${{ "%.2f"|format(sale.total) }}</td>
+                <td>{{ sale.tender_type.value }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+

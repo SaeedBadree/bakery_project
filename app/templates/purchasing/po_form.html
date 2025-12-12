@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}New Purchase Order - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>New Purchase Order</h1>
+
+<div class="card">
+    <form method="post" action="/purchasing/pos">
+        <div class="form-group">
+            <label>Vendor</label>
+            <select name="vendor_id" required>
+                {% for vendor in vendors %}
+                <option value="{{ vendor.id }}">{{ vendor.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Create PO</button>
+        <a href="/purchasing" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+

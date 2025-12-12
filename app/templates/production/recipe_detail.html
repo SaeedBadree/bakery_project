@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ recipe.name }} - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>{{ recipe.name }}</h1>
+
+<div class="card">
+    <h2>Recipe Details</h2>
+    <p><strong>Yield:</strong> {{ recipe.yield_qty }} {{ recipe.yield_unit }}</p>
+    <p><strong>Total Cost:</strong> ${{ "%.2f"|format(total_cost) }}</p>
+    <p><strong>Cost per Unit:</strong> ${{ "%.2f"|format(cost_per_unit) }}</p>
+    {% if recipe.notes %}<p><strong>Notes:</strong> {{ recipe.notes }}</p>{% endif %}
+</div>
+
+<div class="card">
+    <h2>Ingredients</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Ingredient</th>
+                <th>Quantity</th>
+                <th>Unit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in recipe_lines %}
+            <tr>
+                <td>{{ line.ingredient.name }}</td>
+                <td>{{ line.qty }}</td>
+                <td>{{ line.ingredient.unit }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Produce Batch</h2>
+    <form method="post" action="/production/batches">
+        <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
+        <div class="form-group">
+            <label>Quantity to Produce</label>
+            <input type="number" name="qty_produced" step="0.01" min="0" required>
+            <small>{{ recipe.yield_unit }}</small>
+        </div>
+        <div class="form-group">
+            <label>Wastage (optional)</label>
+            <input type="number" name="wastage" step="0.01" min="0" value="0">
+        </div>
+        <div class="form-group">
+            <label>Notes</label>
+            <textarea name="notes"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Produce Batch</button>
+    </form>
+</div>
+
+<a href="/production/recipes" class="btn btn-secondary">Back to Recipes</a>
+{% endblock %}
+

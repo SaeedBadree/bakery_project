@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}POS Checkout - Bakery POS{% endblock %}
+
+{% block content %}
+<div class="pos-container">
+    <div class="pos-products">
+        <div class="search-bar">
+            <input type="text" 
+                   id="product-search" 
+                   placeholder="Search products..."
+                   hx-get="/products/search"
+                   hx-trigger="keyup changed delay:300ms"
+                   hx-target="#product-grid">
+        </div>
+        
+        <div class="category-filters">
+            <button class="category-btn active" data-category="">All</button>
+            {% for cat in categories %}
+            <button class="category-btn" data-category="{{ cat.id }}">{{ cat.name }}</button>
+            {% endfor %}
+        </div>
+        
+        <div id="product-grid" class="product-grid">
+            {% for product in products %}
+            <div class="product-card" 
+                 hx-post="/pos/add-to-cart"
+                 hx-target="#cart-container"
+                 hx-include="[name='product_id']"
+                 hx-headers='{"X-CSRFToken": ""}'>
+                <input type="hidden" name="product_id" value="{{ product.id }}">
+                <input type="hidden" name="qty" value="1">
+                <h3>{{ product.name }}</h3>
+                <div class="price">${{ "%.2f"|format(product.price) }}</div>
+                <small>{{ product.sku }}</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="pos-cart">
+        <h2>Cart</h2>
+        <div id="cart-container">
+            <div id="cart-items">
+                <p>Cart is empty</p>
+            </div>
+            <div class="cart-totals">
+                <div>Subtotal: <strong>$0.00</strong></div>
+                <div>Tax: <strong>$0.00</strong></div>
+                <div class="total">Total: <strong>$0.00</strong></div>
+            </div>
+        </div>
+        
+        <div class="mt-2">
+            <label>Customer (optional):</label>
+            <input type="text" 
+                   id="customer-search" 
+                   placeholder="Search customer..."
+                   hx-get="/pos/search-customer"
+                   hx-trigger="keyup changed delay:300ms"
+                   hx-target="#customer-results">
+            <div id="customer-results"></div>
+            <input type="hidden" name="customer_id" id="customer_id">
+        </div>
+        
+        <div class="mt-2">
+            <label>Tender Type:</label>
+            <select name="tender_type" id="tender_type" required>
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="transfer">Transfer</option>
+                <option value="on_account">On Account</option>
+            </select>
+        </div>
+        
+        <form method="post" action="/pos/complete-sale" class="mt-2" id="complete-sale-form">
+            <input type="hidden" name="customer_id" id="form_customer_id">
+            <input type="hidden" name="tender_type" id="form_tender_type">
+            <input type="hidden" name="sale_discount" value="0">
+            <input type="hidden" name="notes" value="">
+            <button type="submit" class="btn btn-success" style="width: 100%; font-size: 1.2rem; padding: 1rem;">
+                Complete Sale
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('tender_type').addEventListener('change', function() {
+    document.getElementById('form_tender_type').value = this.value;
+});
+
+// Handle customer selection
+document.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.id === 'customer-results') {
+        const links = evt.detail.target.querySelectorAll('a');
+        links.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const customerId = this.dataset.customerId;
+                const customerName = this.textContent;
+                document.getElementById('customer_id').value = customerId;
+                document.getElementById('form_customer_id').value = customerId;
+                document.getElementById('customer-search').value = customerName;
+                document.getElementById('customer-results').innerHTML = '';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
+

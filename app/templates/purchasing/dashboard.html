@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Purchasing - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Purchasing</h1>
+
+<div class="grid grid-2">
+    <div class="card">
+        <h2>Vendors</h2>
+        <a href="/purchasing/vendors" class="btn btn-primary mb-2">Manage Vendors</a>
+        <ul>
+            {% for vendor in vendors %}
+            <li>{{ vendor.name }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h2>Purchase Orders</h2>
+        <a href="/purchasing/pos/new" class="btn btn-primary mb-2">New PO</a>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>PO #</th>
+                    <th>Vendor</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for po in pos %}
+                <tr>
+                    <td>{{ po.po_number }}</td>
+                    <td>{{ po.vendor.name }}</td>
+                    <td>{{ po.date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ po.status.value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

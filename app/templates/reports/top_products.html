@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Top Products - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Top Selling Products</h1>
+
+<div class="card">
+    <form method="get" action="/reports/top-products">
+        <div class="form-group">
+            <label>Days</label>
+            <input type="number" name="days" value="{{ days }}" min="1">
+        </div>
+        <button type="submit" class="btn btn-primary">View Report</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Top Products (Last {{ days }} Days)</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>SKU</th>
+                <th>Quantity Sold</th>
+                <th>Total Revenue</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in top_products %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.sku }}</td>
+                <td>{{ "%.2f"|format(product.total_qty) }}</td>
+                <td>${{ "%.2f"|format(product.total_revenue) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+

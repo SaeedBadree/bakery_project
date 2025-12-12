@@ -1,0 +1,13 @@
+{% if customers %}
+<div style="border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+    {% for customer in customers %}
+    <a href="#" 
+       data-customer-id="{{ customer.id }}" 
+       style="display: block; padding: 0.5rem; border-bottom: 1px solid #eee; text-decoration: none; color: #333;">
+        {{ customer.name }}
+        {% if customer.phone %}<small>({{ customer.phone }})</small>{% endif %}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+

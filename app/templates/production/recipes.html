@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Recipes - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Recipes</h1>
+<a href="/production/recipes/new" class="btn btn-primary mb-2">New Recipe</a>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Yield</th>
+            <th>Total Cost</th>
+            <th>Cost/Unit</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for recipe in recipes %}
+        <tr>
+            <td>{{ recipe.name }}</td>
+            <td>{{ recipe.yield_qty }} {{ recipe.yield_unit }}</td>
+            <td>${{ "%.2f"|format(recipe.total_cost) }}</td>
+            <td>${{ "%.2f"|format(recipe.total_cost / recipe.yield_qty) }}</td>
+            <td><a href="/production/recipes/{{ recipe.id }}" class="btn btn-secondary btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+

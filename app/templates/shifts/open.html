@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Open Shift - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Open Shift</h1>
+
+<div class="card">
+    <form method="post" action="/shifts/open">
+        <div class="form-group">
+            <label for="opening_float">Opening Float ($)</label>
+            <input type="number" id="opening_float" name="opening_float" step="0.01" min="0" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Open Shift</button>
+        <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+

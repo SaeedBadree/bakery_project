@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Categories - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Categories</h1>
+
+<div class="card">
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    
+    <h2 class="card-header">Add Category</h2>
+    <form method="post" action="/categories" class="mb-3">
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="sort_order">Sort Order</label>
+                <input type="number" id="sort_order" name="sort_order" value="0">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Category</button>
+    </form>
+    
+    <h2 class="card-header">All Categories</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Sort Order</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category in categories %}
+            <tr>
+                <td>{{ category.name }}</td>
+                <td>{{ category.sort_order }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+

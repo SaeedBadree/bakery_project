@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  bakery-pos:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./bakery.db:/app/bakery.db
+    environment:
+      - DATABASE_URL=sqlite:///./bakery.db
+    restart: unless-stopped
+    command: >
+      sh -c "python -m alembic upgrade head &&
+             python scripts/seed.py &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+

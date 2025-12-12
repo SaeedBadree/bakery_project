@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Accounts Receivable - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Accounts Receivable</h1>
+
+<div class="card">
+    <h2>Summary</h2>
+    <p><strong>Total AR:</strong> ${{ "%.2f"|format(total_ar) }}</p>
+</div>
+
+<div class="card">
+    <h2>Customers</h2>
+    <a href="/ar/customers" class="btn btn-primary mb-2">Manage Customers</a>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Balance</th>
+                <th>Credit Limit</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>{{ customer.name }}</td>
+                <td>${{ "%.2f"|format(customer.balance) }}</td>
+                <td>${{ "%.2f"|format(customer.credit_limit) }}</td>
+                <td><a href="/ar/customers/{{ customer.id }}" class="btn btn-secondary btn-sm">View</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+

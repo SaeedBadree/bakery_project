@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}PO {{ po.po_number }} - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Purchase Order: {{ po.po_number }}</h1>
+
+<div class="card">
+    <h2>PO Details</h2>
+    <p><strong>Vendor:</strong> {{ po.vendor.name }}</p>
+    <p><strong>Date:</strong> {{ po.date.strftime('%Y-%m-%d') }}</p>
+    <p><strong>Status:</strong> {{ po.status.value }}</p>
+    <p><strong>Total:</strong> ${{ "%.2f"|format(po.total) }}</p>
+</div>
+
+<div class="card">
+    <h2>PO Lines</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Ingredient</th>
+                <th>Qty Ordered</th>
+                <th>Qty Received</th>
+                <th>Unit Cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in po.po_lines %}
+            <tr>
+                <td>{{ line.ingredient.name }}</td>
+                <td>{{ line.qty_ordered }}</td>
+                <td>{{ line.qty_received }}</td>
+                <td>${{ "%.4f"|format(line.unit_cost) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if po.status.value != 'received' %}
+<a href="/purchasing/pos/{{ po.id }}/receive" class="btn btn-primary">Receive PO</a>
+{% endif %}
+<a href="/purchasing" class="btn btn-secondary">Back</a>
+{% endblock %}
+

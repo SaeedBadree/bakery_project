@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Current Shift - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Current Shift</h1>
+
+<div class="card">
+    <h2>Shift Details</h2>
+    <p><strong>Opened:</strong> {{ shift.opened_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    <p><strong>Opening Float:</strong> ${{ "%.2f"|format(shift.opening_float) }}</p>
+    <p><strong>Expected Cash:</strong> ${{ "%.2f"|format(expected_cash) }}</p>
+</div>
+
+<div class="card">
+    <h2>Cash Events</h2>
+    <form method="post" action="/shifts/{{ shift.id }}/cash-event" class="mb-2">
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label>Event Type</label>
+                <select name="event_type" required>
+                    <option value="cash_in">Cash In</option>
+                    <option value="cash_out">Cash Out</option>
+                    <option value="drop">Drop</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Amount</label>
+                <input type="number" name="amount" step="0.01" min="0" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Reason</label>
+            <input type="text" name="reason">
+        </div>
+        <button type="submit" class="btn btn-primary">Add Event</button>
+    </form>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Reason</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in cash_events %}
+            <tr>
+                <td>{{ event.event_type.value }}</td>
+                <td>${{ "%.2f"|format(event.amount) }}</td>
+                <td>{{ event.reason or '-' }}</td>
+                <td>{{ event.datetime.strftime('%H:%M:%S') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <a href="/shifts/{{ shift.id }}/close" class="btn btn-danger">Close Shift</a>
+</div>
+{% endblock %}
+

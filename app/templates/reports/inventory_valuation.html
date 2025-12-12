@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Valuation - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Inventory Valuation</h1>
+
+<div class="card">
+    <h2>Summary</h2>
+    <p><strong>Product Value:</strong> ${{ "%.2f"|format(product_value) }}</p>
+    <p><strong>Ingredient Value:</strong> ${{ "%.2f"|format(ingredient_value) }}</p>
+    <p><strong>Total Value:</strong> ${{ "%.2f"|format(total_value) }}</p>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
+        <h2>Products</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>On Hand</th>
+                    <th>Cost</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.on_hand }}</td>
+                    <td>${{ "%.2f"|format(product.cost or 0) }}</td>
+                    <td>${{ "%.2f"|format(product.on_hand * (product.cost or 0)) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="card">
+        <h2>Ingredients</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Ingredient</th>
+                    <th>On Hand</th>
+                    <th>Cost/Unit</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ing in ingredients %}
+                <tr>
+                    <td>{{ ing.name }}</td>
+                    <td>{{ ing.on_hand }} {{ ing.unit }}</td>
+                    <td>${{ "%.4f"|format(ing.cost_per_unit) }}</td>
+                    <td>${{ "%.2f"|format(ing.on_hand * ing.cost_per_unit) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

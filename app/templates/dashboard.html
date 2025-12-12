@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Bakery POS{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+<p>Welcome, {{ user.username }}! (Role: {{ user.role.name }})</p>
+
+<div class="grid grid-2" style="margin-top: 2rem;">
+    <div class="card">
+        <div class="card-header">Quick Actions</div>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <a href="/pos/checkout" class="btn btn-primary">New Sale</a>
+            <a href="/shifts/open" class="btn btn-success">Open Shift</a>
+            <a href="/products" class="btn btn-secondary">Manage Products</a>
+            <a href="/inventory" class="btn btn-secondary">Inventory</a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">Today's Summary</div>
+        <p>Sales: $0.00</p>
+        <p>Transactions: 0</p>
+    </div>
+</div>
+{% endblock %}
+
